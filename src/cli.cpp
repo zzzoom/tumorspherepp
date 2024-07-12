@@ -13,7 +13,7 @@ static void run(float prob_stem, float prob_diff, int realization, int steps)
     std::string run_name = std::format("ps{}_pd{}_r{}", prob_stem, prob_diff, realization);
     Output out(run_name);
     Culture culture(1.0f, &out);
-    culture.addCell(Position { 0.0f, 0.0f, 0.0f }, true, 0, 0);
+    culture.addCell(Position { 0.0f, 0.0f, 0.0f }, 0, true);
     culture.prob_diff = prob_stem;
     culture.prob_stem = prob_diff;
     culture.simulate(steps);

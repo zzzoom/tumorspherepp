@@ -70,13 +70,17 @@ bool Culture::overlapsNeighbors(const Position& candidate_position, const Positi
     return distance_squared <= (4.0f * cell_radius_ * cell_radius_);
 }
 
-int Culture::addCell(const Position position, bool is_stem, int parent_index, int creation_time)
+int Culture::addCell(const Position position, int parent_index, bool is_stem, bool is_active)
 {
     int cell_index = cell_data_.size();
     cell_positions_.emplace_back(position);
-    cell_data_.emplace_back(CellData { .is_active = true, .is_stem = is_stem, .parent_index = parent_index, .creation_time = creation_time });
+    cell_data_.emplace_back(CellData { .is_active = is_active, .is_stem = is_stem, .parent_index = parent_index });
     grid_.addPosition(position);
-    // FIXME: First cell not written to output
+
+    if (output_) {
+        output_->addCell(cell_index, parent_index, position);
+        output_->updateStatus(cell_index, tic_, repro_, attempt_, is_stem, is_active);
+    }
     return cell_index;
 }
 
@@ -98,11 +102,7 @@ void Culture::reproduce(int parent_index)
             const bool parent_was_stem = parent_data.is_stem;
             const auto [parent_is_stem, child_is_stem] = determineStemness(parent_was_stem);
 
-            int child_index = addCell(child_position, child_is_stem, parent_index, tic_);
-            if (output_) {
-                output_->addCell(child_index, parent_index, child_position);
-                output_->updateStatus(child_index, tic_, repro_, attempt_, child_is_stem, true);
-            }
+            addCell(child_position, parent_index, child_is_stem);
 
             // TODO: log
             if (parent_was_stem != parent_is_stem) {
