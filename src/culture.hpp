@@ -36,7 +36,7 @@ public:
     float prob_swap = 0.5f;
     int cell_max_repro_attempts = 1000;
 
-    void addCell(const Position position, bool is_stem, int parent_index, int creation_time);
+    int addCell(const Position position, bool is_stem, int parent_index, int creation_time);
     int simulate(int time_steps);
 
 private:

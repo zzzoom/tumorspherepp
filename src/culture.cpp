@@ -10,7 +10,6 @@
 #include <tuple>
 #include <vector>
 
-
 float Culture::adjustCoordinate(float c) const
 {
     float result = c;
@@ -35,7 +34,6 @@ Position Culture::generateNewPosition(const Position& parent)
         adjustCoordinate(parent.z + 2 * cell_radius_ * cos_theta)
     };
 }
-
 
 std::tuple<bool, bool> Culture::determineStemness(const bool parent_was_stem)
 {
@@ -66,21 +64,21 @@ std::tuple<bool, bool> Culture::determineStemness(const bool parent_was_stem)
     return std::tuple { parent_is_stem, child_is_stem };
 }
 
-
 bool Culture::overlapsNeighbors(const Position& candidate_position, const Position& parent_position)
 {
     auto distance_squared = grid_.minSquaredDistance(candidate_position, parent_position);
     return distance_squared <= (4.0f * cell_radius_ * cell_radius_);
 }
 
-
-void Culture::addCell(const Position position, bool is_stem, int parent_index, int creation_time)
+int Culture::addCell(const Position position, bool is_stem, int parent_index, int creation_time)
 {
+    int cell_index = cell_data_.size();
     cell_positions_.emplace_back(position);
     cell_data_.emplace_back(CellData { .is_active = true, .is_stem = is_stem, .parent_index = parent_index, .creation_time = creation_time });
     grid_.addPosition(position);
+    // FIXME: First cell not written to output
+    return cell_index;
 }
-
 
 void Culture::reproduce(int parent_index)
 {
@@ -100,13 +98,18 @@ void Culture::reproduce(int parent_index)
             const bool parent_was_stem = parent_data.is_stem;
             const auto [parent_is_stem, child_is_stem] = determineStemness(parent_was_stem);
 
-            addCell(child_position, child_is_stem, parent_index, tic_);
-            addOutput(child_position, child_is_stem, true);
+            int child_index = addCell(child_position, child_is_stem, parent_index, tic_);
+            if (output_) {
+                output_->addCell(child_index, parent_index, child_position);
+                output_->updateStatus(child_index, tic_, repro_, attempt_, child_is_stem, true);
+            }
 
             // TODO: log
             if (parent_was_stem != parent_is_stem) {
                 parent_data.is_stem = parent_is_stem;
-                addOutput(parent_position, parent_data.is_stem, parent_data.is_active);
+                if (output_) {
+                    output_->updateStatus(parent_index, tic_, repro_, attempt_, parent_data.is_stem, parent_data.is_active);
+                }
             }
             reproduced = true;
             break;
@@ -116,18 +119,11 @@ void Culture::reproduce(int parent_index)
     if (!reproduced) {
         // The cell has no available space to reproduce
         parent_data.is_active = false;
-        addOutput(parent_position, parent_data.is_stem, parent_data.is_active);
+        if (output_) {
+            output_->updateStatus(parent_index, tic_, repro_, attempt_, parent_data.is_stem, parent_data.is_active);
+        }
     }
 }
-
-
-void Culture::addOutput(Position pos, bool is_stem, bool is_active)
-{
-    if (output_) {
-        output_->add(tic_, repro_, attempt_, pos, is_stem, is_active);
-    }
-}
-
 
 int Culture::simulate(int time_steps)
 {
