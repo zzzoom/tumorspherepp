@@ -73,9 +73,11 @@ bool Culture::overlapsNeighbors(const Position& candidate_position, const Positi
 int Culture::addCell(const Position position, int parent_index, bool is_stem, bool is_active)
 {
     int cell_index = cell_data_.size();
-    cell_positions_.emplace_back(position);
-    cell_data_.emplace_back(CellData { .is_active = is_active, .is_stem = is_stem, .parent_index = parent_index });
+
+    cell_positions_.push_back(position);
     grid_.addPosition(position);
+    CellData cell_data { .is_active = is_active, .is_stem = is_stem, .parent_index = parent_index };
+    cell_data_.push_back(cell_data);
 
     if (output_) {
         output_->addCell(cell_index, parent_index, position);
@@ -102,15 +104,17 @@ void Culture::reproduce(int parent_index)
             const bool parent_was_stem = parent_data.is_stem;
             const auto [parent_is_stem, child_is_stem] = determineStemness(parent_was_stem);
 
-            addCell(child_position, parent_index, child_is_stem);
-
             // TODO: log
             if (parent_was_stem != parent_is_stem) {
                 parent_data.is_stem = parent_is_stem;
                 if (output_) {
-                    output_->updateStatus(parent_index, tic_, repro_, attempt_, parent_data.is_stem, parent_data.is_active);
+                    output_->updateStatus(parent_index, tic_, repro_, attempt_, parent_is_stem, parent_data.is_active);
                 }
             }
+
+            // NOTE: Ordering wrt parent updates is important, this can invalidate references
+            addCell(child_position, parent_index, child_is_stem);
+
             reproduced = true;
             break;
         }
