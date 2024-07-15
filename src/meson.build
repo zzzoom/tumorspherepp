@@ -10,7 +10,7 @@ omp_dep = dependency('openmp')
 
 sources = [ 'cli.cpp', 'culture.cpp', 'grid.cpp', 'neighborhood.cpp' ]
 
-tumor2 = executable('tumor2',
+tumorspherepp = executable('tumorsphere++',
   sources,
   dependencies: [ cxxopts_dep, pcg_dep, hdf5_dep, omp_dep ]
 )
